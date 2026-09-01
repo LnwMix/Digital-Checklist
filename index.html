@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bg:#ECE8DF;
@@ -352,6 +354,7 @@
         </div>
         <span class="caret">▾ เปลี่ยนเครื่อง</span>
       </div>
+      <span id="syncBadge" style="font-size:11px; color:#9AA1A7;"></span>
     </div>
     <div class="meter" id="meterBtn" title="ไปหน้าชั่วโมงการใช้งาน">
       <div class="meter-label"><b>ชั่วโมงสะสม</b>HOUR METER</div>
@@ -546,25 +549,102 @@ let state = {
   formNote: {daily:{}, monthly:{}}
 };
 
+/* ---------------- Firebase (optional) ----------------
+   Paste your firebaseConfig from the Firebase console below.
+   If left as-is (apiKey: "YOUR_API_KEY"), Firebase is skipped
+   and the app falls back to per-device localStorage. */
+const firebaseConfig = {
+  apiKey: "AIzaSyAs3aEA-jaXkh6-suSlEfRdHyL4EU87lbg",
+  authDomain: "sn32-checklist.firebaseapp.com",
+  projectId: "sn32-checklist",
+  storageBucket: "sn32-checklist.firebasestorage.app",
+  messagingSenderId: "112447194461",
+  appId: "1:112447194461:web:5ad00aad8349bef8af94b4"
+};
+
+let db = null;
+let firebaseReady = false;
+try{
+  if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY" && typeof firebase !== 'undefined'){
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseReady = true;
+  }
+}catch(e){ console.error('Firebase init failed', e); }
+
+const firestoreStorage = {
+  async get(key, shared){
+    const doc = await db.collection('checklist_kv').doc(key).get();
+    if(!doc.exists) throw new Error('not found');
+    return {key, value: doc.data().value, shared};
+  },
+  async set(key, value, shared){
+    await db.collection('checklist_kv').doc(key).set({value});
+    return {key, value, shared};
+  },
+  async delete(key, shared){
+    await db.collection('checklist_kv').doc(key).delete();
+    return {key, deleted:true, shared};
+  },
+  async list(prefix, shared){
+    const snap = await db.collection('checklist_kv').get();
+    const keys = snap.docs.map(d=>d.id).filter(k => !prefix || k.startsWith(prefix));
+    return {keys, prefix, shared};
+  }
+};
+
+/* ---------------- Storage compatibility layer ----------------
+   Priority: Claude's window.storage (when opened inside Claude) >
+   Firebase Firestore (when configured, syncs across all devices) >
+   browser localStorage (per-device fallback, no setup needed). */
+const storage = (function(){
+  if (window.storage) return window.storage;
+  if (firebaseReady) return firestoreStorage;
+  return {
+    async get(key, shared){
+      const raw = localStorage.getItem(key);
+      if(raw===null) throw new Error('not found');
+      return {key, value: raw, shared};
+    },
+    async set(key, value, shared){
+      localStorage.setItem(key, value);
+      return {key, value, shared};
+    },
+    async delete(key, shared){
+      localStorage.removeItem(key);
+      return {key, deleted:true, shared};
+    },
+    async list(prefix, shared){
+      const keys = Object.keys(localStorage).filter(k => !prefix || k.startsWith(prefix));
+      return {keys, prefix, shared};
+    }
+  };
+})();
+
 /* ---------------- Storage helpers ---------------- */
 async function loadJSON(key, def, shared=true){
   try{
-    const res = await window.storage.get(key, shared);
+    const res = await storage.get(key, shared);
     return res ? JSON.parse(res.value) : def;
   }catch(e){ return def; }
 }
 async function saveJSON(key, value, shared=true){
-  try{ await window.storage.set(key, JSON.stringify(value), shared); }
+  try{ await storage.set(key, JSON.stringify(value), shared); }
   catch(e){ console.error('storage save failed', key, e); }
 }
 async function deleteJSON(key, shared=true){
-  try{ await window.storage.delete(key, shared); }
+  try{ await storage.delete(key, shared); }
   catch(e){ /* key may not exist - ignore */ }
 }
 function machineKey(base){ return base+':'+currentMachineId; }
 
 /* ---------------- Init ---------------- */
 async function init(){
+  const badge = document.getElementById('syncBadge');
+  if (window.storage) badge.textContent = '● เชื่อมกับ Claude';
+  else if (firebaseReady) badge.textContent = '● ซิงก์ผ่าน Firebase';
+  else badge.textContent = '○ บันทึกในเครื่องนี้เท่านั้น';
+
   const [machinesData, savedSelection, lastOperator] = await Promise.all([
     loadJSON('config:machines', null, true),
     loadJSON('selected-machine', null, false),
