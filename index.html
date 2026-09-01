@@ -378,7 +378,7 @@
   <section id="tab-daily" class="tabpane">
     <div class="panel">
       <h2>ตรวจเช็คประจำวัน</h2>
-      <div class="sub">ตรวจก่อน/หลังใช้งานเครื่องในแต่ละกะ — เน้นจุดที่ใช้งานบ่อยและสึกหรอเร็ว</div>
+      <div class="sub">ตรวจก่อน/หลังใช้งาน</div>
       <div class="field-row">
         <div class="field">
           <label>วันที่ตรวจ</label>
@@ -434,6 +434,9 @@
       <div class="hours-display">
         <span class="big mono" id="usage-total">000000</span>
         <span class="unit">ชั่วโมงสะสมทั้งหมด (HR)</span>
+        <div style="margin-top:12px;">
+          <button class="btn btn-ghost" id="usage-resetbtn" style="border-color:var(--red); color:var(--red);">↺ รีเซ็ตชั่วโมงเป็น 0</button>
+        </div>
       </div>
       <div class="field-row" style="margin-top:16px;">
         <div class="field">
@@ -959,12 +962,20 @@ function renderUsage(){
     logDiv.innerHTML = '<div class="empty-state">ยังไม่มีบันทึกชั่วโมงการใช้งาน</div>';
     return;
   }
-  logDiv.innerHTML = log.map(l=>`
+  logDiv.innerHTML = log.map(l=>{
+    if(l.type === 'reset'){
+      return `
+      <div class="log-entry">
+        <span>${l.date}</span>
+        <span class="amt" style="color:var(--red);">↺ รีเซ็ต (จาก ${formatHours(l.totalBefore)} → 0)</span>
+      </div>`;
+    }
+    return `
     <div class="log-entry">
       <span>${l.date}</span>
       <span class="amt">+${l.added} ชม. → รวม ${formatHours(l.totalAfter)}</span>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 function formatHours(n){
   return String(Math.round(n*10)/10).padStart(6,'0');
@@ -976,13 +987,28 @@ document.getElementById('usage-savebtn').addEventListener('click', async ()=>{
   const dateVal = document.getElementById('usage-date').value || todayStr();
   state.usage.total = (state.usage.total||0) + addVal;
   state.usage.log = state.usage.log || [];
-  state.usage.log.push({date: dateVal, added: addVal, totalAfter: state.usage.total, ts: new Date().toISOString()});
+  state.usage.log.push({type:'add', date: dateVal, added: addVal, totalAfter: state.usage.total, ts: new Date().toISOString()});
   const cutoff = Date.now() - FOUR_MONTHS_MS;
   state.usage.log = state.usage.log.filter(l => new Date(l.ts).getTime() >= cutoff);
   await saveJSON(machineKey('usage:data'), state.usage, true);
   document.getElementById('usage-add').value='';
   renderUsage();
   showToast('บันทึกชั่วโมงการใช้งานแล้ว');
+});
+
+document.getElementById('usage-resetbtn').addEventListener('click', async ()=>{
+  const currentTotal = state.usage.total||0;
+  if(currentTotal <= 0){ showToast('ชั่วโมงเป็น 0 อยู่แล้ว'); return; }
+  const ok = confirm('รีเซ็ตชั่วโมงสะสมเป็น 0 หรือไม่? (จากปัจจุบัน '+formatHours(currentTotal)+' ชม.)\nประวัติชั่วโมงเก่าจะยังถูกเก็บไว้ ไม่ถูกลบ');
+  if(!ok) return;
+  state.usage.log = state.usage.log || [];
+  state.usage.log.push({type:'reset', date: todayStr(), totalBefore: currentTotal, totalAfter: 0, ts: new Date().toISOString()});
+  state.usage.total = 0;
+  const cutoff = Date.now() - FOUR_MONTHS_MS;
+  state.usage.log = state.usage.log.filter(l => new Date(l.ts).getTime() >= cutoff);
+  await saveJSON(machineKey('usage:data'), state.usage, true);
+  renderUsage();
+  showToast('รีเซ็ตชั่วโมงเป็น 0 แล้ว (ประวัติยังอยู่)');
 });
 
 document.getElementById('meterBtn').addEventListener('click', ()=>switchTab('usage'));
@@ -1051,9 +1077,24 @@ document.getElementById('export-btn').addEventListener('click', ()=>{
 
   const dailyRows = recordsToRows(state.records.daily);
   const monthlyRows = recordsToRows(state.records.monthly);
-  const usageRows = (state.usage.log||[]).map(l=>({
-    'วันที่': l.date, 'ชั่วโมงที่เพิ่ม': l.added, 'ชั่วโมงสะสมรวม': l.totalAfter
-  }));
+  const usageRows = (state.usage.log||[]).map(l=>{
+    if(l.type === 'reset'){
+      return {
+        'วันที่': l.date,
+        'ประเภทรายการ': 'รีเซ็ตชั่วโมง',
+        'ชั่วโมงที่เพิ่ม': '-',
+        'ชั่วโมงก่อนรีเซ็ต': l.totalBefore,
+        'ชั่วโมงสะสมรวม': 0
+      };
+    }
+    return {
+      'วันที่': l.date,
+      'ประเภทรายการ': 'บันทึกชั่วโมง',
+      'ชั่วโมงที่เพิ่ม': l.added,
+      'ชั่วโมงก่อนรีเซ็ต': '-',
+      'ชั่วโมงสะสมรวม': l.totalAfter
+    };
+  });
 
   wb.SheetNames.push('ตรวจรายวัน');
   wb.Sheets['ตรวจรายวัน'] = XLSX.utils.json_to_sheet(dailyRows.length?dailyRows:[{'หมายเหตุ':'ไม่มีข้อมูล'}]);
