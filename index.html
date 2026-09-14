@@ -221,6 +221,31 @@
     display:none;
   }
   .item-note.show{display:block;}
+  .item-criteria{
+    font-size:12.5px;
+    padding:5px 9px;
+    border-radius:4px;
+    background:#F3F0E9;
+    color:var(--ink-soft);
+    width:100%;
+  }
+  .item-criteria.st-ok{background:#E4EEE6; color:var(--green);}
+  .item-criteria.st-watch{background:#F7EBD2; color:#8A5A1E;}
+  .item-criteria.st-change{background:#F5DEDA; color:var(--red);}
+  .crit-edit-link{
+    font-size:11.5px; color:var(--accent); cursor:pointer; margin-left:8px; text-decoration:underline;
+  }
+  .crit-add-link{
+    font-size:12px; color:var(--accent); cursor:pointer; margin-left:0; text-decoration:underline; width:fit-content;
+  }
+  .crit-edit{
+    border:1px solid var(--line); border-radius:4px; padding:9px 10px; background:#FBFAF7;
+  }
+  .crit-edit-row{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .crit-edit-row label{font-size:12px; color:var(--ink-soft); width:78px; flex-shrink:0;}
+  .crit-edit-row input{
+    flex:1; border:1px solid var(--line); border-radius:4px; padding:6px 8px; font-size:12.5px; font-family:inherit; background:#fff;
+  }
   .item-remove{
     background:none; border:none; color:#B7ADA0; font-size:16px; cursor:pointer; padding:0 4px;
   }
@@ -356,10 +381,6 @@
       </div>
       <span id="syncBadge" style="font-size:11px; color:#9AA1A7;"></span>
     </div>
-    <div class="meter" id="meterBtn" title="ไปหน้าชั่วโมงการใช้งาน">
-      <div class="meter-label"><b>ชั่วโมงสะสม</b>HOUR METER</div>
-      <div class="digits" id="meterDigits">000000</div>
-    </div>
   </div>
 </header>
 
@@ -367,7 +388,6 @@
   <div class="tabrow">
     <button data-tab="daily" class="active">รายวัน</button>
     <button data-tab="monthly">รายเดือน</button>
-    <button data-tab="usage">ชั่วโมงใช้งาน</button>
     <button data-tab="history">ประวัติ</button>
   </div>
 </nav>
@@ -394,6 +414,7 @@
         <input type="text" id="daily-newitem" placeholder="เพิ่มรายการตรวจ...">
         <button class="btn btn-ghost" id="daily-addbtn">+ เพิ่ม</button>
       </div>
+      <div style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">* รายการที่เพิ่มเองใช้ได้เฉพาะวันนี้ จะถูกลบออกอัตโนมัติในวันถัดไป</div>
       <div class="btn-row">
         <button class="btn btn-primary" id="daily-savebtn">บันทึกผลตรวจวันนี้</button>
       </div>
@@ -420,41 +441,10 @@
         <input type="text" id="monthly-newitem" placeholder="เพิ่มรายการตรวจ...">
         <button class="btn btn-ghost" id="monthly-addbtn">+ เพิ่ม</button>
       </div>
+      <div style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">* รายการที่เพิ่มเองใช้ได้เฉพาะวันนี้ จะถูกลบออกอัตโนมัติในวันถัดไป</div>
       <div class="btn-row">
         <button class="btn btn-primary" id="monthly-savebtn">บันทึกผลตรวจเดือนนี้</button>
       </div>
-    </div>
-  </section>
-
-  <!-- USAGE -->
-  <section id="tab-usage" class="tabpane" style="display:none;">
-    <div class="panel">
-      <h2>ชั่วโมงการใช้งานเครื่อง</h2>
-      <div class="sub">บันทึกชั่วโมงทำงานสะสม เพื่อใช้อ้างอิงรอบซ่อมบำรุง</div>
-      <div class="hours-display">
-        <span class="big mono" id="usage-total">000000</span>
-        <span class="unit">ชั่วโมงสะสมทั้งหมด (HR)</span>
-        <div style="margin-top:12px;">
-          <button class="btn btn-ghost" id="usage-resetbtn" style="border-color:var(--red); color:var(--red);">↺ รีเซ็ตชั่วโมงเป็น 0</button>
-        </div>
-      </div>
-      <div class="field-row" style="margin-top:16px;">
-        <div class="field">
-          <label>เพิ่มชั่วโมงที่ใช้งาน (วันนี้)</label>
-          <input type="number" id="usage-add" min="0" step="0.5" placeholder="เช่น 8">
-        </div>
-        <div class="field">
-          <label>วันที่</label>
-          <input type="date" id="usage-date">
-        </div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="usage-savebtn">บันทึกชั่วโมง</button>
-      </div>
-    </div>
-    <div class="panel">
-      <h2 style="font-size:15px;">บันทึกล่าสุด</h2>
-      <div id="usage-log"></div>
     </div>
   </section>
 
@@ -511,30 +501,45 @@ const STATUS_LABEL = {ok:'ปกติ', watch:'เฝ้าระวัง', ch
 
 const DEFAULT_ITEMS = {
   daily: [
-    {id:'d1', name:'ระดับน้ำมันหล่อลื่นเกียร์'},
-    {id:'d2', name:'ระดับน้ำยาหล่อเย็น'},
-    {id:'d3', name:'สภาพสายพานขับ'},
-    {id:'d4', name:'หัวจับชิ้นงาน (Chuck)'},
-    {id:'d5', name:'ระบบเบรก/คลัตช์'},
-    {id:'d6', name:'ปุ่มฉุกเฉินและสวิตช์ควบคุม'},
-    {id:'d7', name:'เสียงผิดปกติขณะทำงาน'},
-    {id:'d8', name:'ความสะอาดราง/เศษโลหะ'},
-    {id:'d9', name:'ฝาครอบป้องกันอันตราย'},
-    {id:'d10', name:'แรงดันลม (ระบบนิวเมติกส์)'}
+    {id:'d1', name:'น้ำมันไฮดรอลิค'},
+    {id:'d2', name:'น้ำมันสไลด์เวย์'},
+    {id:'d3', name:'ระดับน้ำมันหล่อลื่นเกียร์'},
+    {id:'d4', name:'สภาพสายพานขับ'},
+    {id:'d5', name:'หัวจับชิ้นงาน (Chuck)'},
+    {id:'d6', name:'ระบบเบรก/คลัตช์'},
+    {id:'d7', name:'ปุ่มฉุกเฉินและสวิตช์ควบคุม'},
+    {id:'d8', name:'เสียงผิดปกติขณะทำงาน'},
+    {id:'d9', name:'ความสะอาดราง/เศษโลหะ'}
   ],
   monthly: [
-    {id:'m1', name:'ตลับลูกปืนแกนหมุนหลัก (Spindle)'},
-    {id:'m2', name:'ความตึงและสภาพสายพาน'},
-    {id:'m3', name:'สภาพเฟืองทดรอบ'},
-    {id:'m4', name:'รางเลื่อน/สไลด์แท่นเครื่อง'},
-    {id:'m5', name:'ระบบไฮดรอลิก/นิวเมติกส์'},
-    {id:'m6', name:'สายไฟและตู้คอนโทรล'},
-    {id:'m7', name:'มอเตอร์ไฟฟ้า (แปรงถ่าน/ความร้อน)'},
-    {id:'m8', name:'จุดอัดจาระบี'},
-    {id:'m9', name:'ระยะฟรีเฟือง (แบ็คแลช)'},
-    {id:'m10', name:'พัดลม/ระบบระบายความร้อน'}
+    {id:'m1', name:'สภาพเฟืองทดรอบ'},
+    {id:'m2', name:'เฟืองใหญ่'},
+    {id:'m3', name:'รางเลื่อน/สไลด์แท่นเครื่อง'},
+    {id:'m4', name:'สายไฟและตู้คอนโทรล'},
+    {id:'m5', name:'จุดอัดจาระบี'},
+    {id:'m6', name:'ระดับน้ำยาหล่อเย็น'}
   ]
 };
+
+const CRITERIA = {
+  d1:{ok:'น้ำมันใส เห็นระดับในช่องดู 70% ขึ้นไป', watch:'น้ำมันเริ่มขุ่น หรือระดับเหลือน้อยกว่า 30%', change:'น้ำมันดำ/ขุ่น/มีฟอง/รั่วซึม หรือระดับต่ำกว่า 10%'},
+  d2:{ok:'น้ำมันไหลหยดสม่ำเสมอ สีใส', watch:'น้ำมันหยดไม่สม่ำเสมอ มีเศษผงปน', change:'น้ำมันไม่ไหลเลย ท่ออุดตัน หรือสีดำ'},
+  d3:{ok:'ระดับน้ำมัน 70% ขึ้นไปของช่องดูระดับ', watch:'ระดับน้ำมันเหลือน้อยกว่า 30%', change:'ระดับน้ำมันต่ำกว่า 10% หรือมีรอยรั่วซึม'},
+  d4:{ok:'สายพานตึงพอดี ผิวเรียบไม่มีรอยแตก', watch:'สายพานเริ่มหย่อน หรือมีรอยแตกเล็กน้อย', change:'สายพานแตกลาย ลื่นไถล หรือขาด'},
+  d5:{ok:'จับชิ้นงานแน่น ไม่มีการสั่นขณะทำงาน', watch:'จับได้แต่รู้สึกมีระยะฟรีเล็กน้อย', change:'จับไม่แน่น ฟันจับสึก หรือสั่นแรงขณะทำงาน'},
+  d6:{ok:'กดแล้วเครื่องหยุดทันที', watch:'เครื่องหยุดช้าลงเล็กน้อย', change:'เบรกไม่อยู่ หรือคลัตช์ลื่นไม่ตัดกำลัง'},
+  d7:{ok:'กดปุ่มแล้วไฟตัดทันที สวิตช์กดลื่นคล่องมือ', watch:'สวิตช์ฝืด หรือตอบสนองช้ากว่าปกติ', change:'กดปุ่มฉุกเฉินแล้วไฟไม่ตัด หรือสวิตช์ค้าง'},
+  d8:{ok:'เสียงเครื่องเรียบสม่ำเสมอเหมือนทุกวัน', watch:'มีเสียงดังผิดหูเป็นบางจังหวะ', change:'มีเสียงดังผิดปกติตลอดเวลา หรือมีเสียงกระแทก'},
+  d9:{ok:'รางสะอาด ไม่มีเศษโลหะตกค้าง', watch:'มีเศษโลหะสะสมเล็กน้อย', change:'เศษโลหะอุดตันจนกระทบการเคลื่อนที่ของราง'},
+  m1:{ok:'ฟันเฟืองเรียบ เสียงทำงานเงียบ', watch:'เริ่มเห็นรอยสึกที่ฟันเฟือง หรือเสียงดังขึ้นเล็กน้อย', change:'ฟันเฟืองบิ่นหรือสึกลึก มีเสียงดังผิดปกติชัดเจน'},
+  m2:{ok:'ผิวเฟืองเรียบ ไม่มีรอยแตก', watch:'เริ่มมีรอยสึกหรือสนิมที่ผิว', change:'ฟันเฟืองบิ่น แตกร้าว หรือขยับหลวมเกินไป'},
+  m3:{ok:'เคลื่อนที่ลื่น ไม่มีรอยขูดขีด', watch:'มีรอยขีดข่วนเล็กน้อย หรือรู้สึกฝืดบางจุด', change:'สึกเป็นร่องลึก เคลื่อนที่ฝืดมาก หรือมีระยะหลวม'},
+  m4:{ok:'สายไฟสภาพดี ตู้คอนโทรลสะอาด', watch:'มีฝุ่นสะสมในตู้ หรือสายไฟเริ่มกรอบ', change:'สายไฟชำรุด ฉนวนแตก หรือมีรอยไหม้'},
+  m5:{ok:'อัดจาระบีได้ตามปกติ มีจาระบีไหลออกมาให้เห็น', watch:'อัดจาระบีได้ยากกว่าปกติ', change:'หัวอัดตัน ไม่มีจาระบีค้างอยู่ในจุดหมุนเลย'},
+  m6:{ok:'ระดับน้ำยา 70% ขึ้นไปของถัง สีใส กลิ่นปกติ', watch:'ระดับน้ำยาเหลือน้อยกว่า 30% หรือเริ่มมีกลิ่นเปรี้ยว', change:'ระดับต่ำกว่า 10% น้ำยาขุ่นเสีย หรือมีเชื้อรา'}
+};
+
+const ITEMS_SCHEMA_VERSION = 2;
 
 const DEFAULT_MACHINES = [
   {id:'sn32', name:'SN-32', desc:'เครื่องกลึงยันศูนย์'}
@@ -546,11 +551,12 @@ let currentMachineId = 'sn32';
 
 let state = {
   items: JSON.parse(JSON.stringify(DEFAULT_ITEMS)),
+  criteria: JSON.parse(JSON.stringify(CRITERIA)),
   records: {daily: [], monthly: []},
-  usage: {total:0, log:[]},
   formStatus: {daily:{}, monthly:{}},
   formNote: {daily:{}, monthly:{}}
 };
+let editingCriteria = {daily:null, monthly:null};
 
 /* ---------------- Firebase (optional) ----------------
    Paste your firebaseConfig from the Firebase console below.
@@ -648,10 +654,9 @@ async function init(){
   else if (firebaseReady) badge.textContent = '● ซิงก์ผ่าน Firebase';
   else badge.textContent = '○ บันทึกในเครื่องนี้เท่านั้น';
 
-  const [machinesData, savedSelection, lastOperator] = await Promise.all([
+  const [machinesData, savedSelection] = await Promise.all([
     loadJSON('config:machines', null, true),
-    loadJSON('selected-machine', null, false),
-    loadJSON('last-operator', '', false)
+    loadJSON('selected-machine', null, false)
   ]);
   machines = machinesData && machinesData.length ? machinesData : JSON.parse(JSON.stringify(DEFAULT_MACHINES));
   if(!machinesData) await saveJSON('config:machines', machines, true);
@@ -660,11 +665,6 @@ async function init(){
 
   document.getElementById('daily-date').value = todayStr();
   document.getElementById('monthly-date').value = todayStr();
-  document.getElementById('usage-date').value = todayStr();
-  if(lastOperator){
-    document.getElementById('daily-operator').value = lastOperator;
-    document.getElementById('monthly-operator').value = lastOperator;
-  }
 
   await loadMachineData();
   renderMachineBadge();
@@ -672,32 +672,44 @@ async function init(){
 }
 
 async function loadMachineData(){
-  const [items, dailyRec, monthlyRec, usage] = await Promise.all([
+  const [items, itemsVer, criteriaOverrides, dailyRec, monthlyRec] = await Promise.all([
     loadJSON(machineKey('config:items'), null, true),
+    loadJSON(machineKey('config:items:ver'), 0, true),
+    loadJSON(machineKey('config:criteria'), null, true),
     loadJSON(machineKey('records:daily'), [], true),
-    loadJSON(machineKey('records:monthly'), [], true),
-    loadJSON(machineKey('usage:data'), {total:0, log:[]}, true)
+    loadJSON(machineKey('records:monthly'), [], true)
   ]);
-  if(items){ state.items = items; }
-  else{
+  if(items && itemsVer === ITEMS_SCHEMA_VERSION){
+    state.items = items;
+  }else{
     state.items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
     await saveJSON(machineKey('config:items'), state.items, true);
+    await saveJSON(machineKey('config:items:ver'), ITEMS_SCHEMA_VERSION, true);
   }
+  state.criteria = Object.assign(JSON.parse(JSON.stringify(CRITERIA)), criteriaOverrides||{});
+
+  const pruned = pruneCustomItems('daily') | pruneCustomItems('monthly');
+  if(pruned) await saveJSON(machineKey('config:items'), state.items, true);
+
   state.records.daily = pruneOld(dailyRec);
   state.records.monthly = pruneOld(monthlyRec);
-  state.usage = usage;
 
   resetForm('daily');
   resetForm('monthly');
   renderChecklist('daily');
   renderChecklist('monthly');
-  renderUsage();
   renderHistory();
 }
 
 function pruneOld(list){
   const cutoff = Date.now() - FOUR_MONTHS_MS;
   return (list||[]).filter(r => new Date(r.timestamp).getTime() >= cutoff);
+}
+function pruneCustomItems(type){
+  const today = todayStr();
+  const before = state.items[type].length;
+  state.items[type] = state.items[type].filter(it => !(it.custom && it.addedDate !== today));
+  return state.items[type].length !== before;
 }
 function todayStr(){
   const d = new Date();
@@ -801,8 +813,7 @@ async function deleteMachine(mid){
   await Promise.all([
     deleteJSON('config:items:'+mid, true),
     deleteJSON('records:daily:'+mid, true),
-    deleteJSON('records:monthly:'+mid, true),
-    deleteJSON('usage:data:'+mid, true)
+    deleteJSON('records:monthly:'+mid, true)
   ]);
   if(currentMachineId === mid){
     currentMachineId = machines[0].id;
@@ -866,6 +877,28 @@ function renderChecklist(type){
     const row = document.createElement('div');
     row.className = 'item-row';
     const st = state.formStatus[type][it.id] || 'ok';
+    const crit = state.criteria[it.id];
+    const isEditing = editingCriteria[type] === it.id;
+
+    let critBlock;
+    if(isEditing){
+      const c = crit || {ok:'', watch:'', change:''};
+      critBlock = `
+        <div class="crit-edit" data-cid="${it.id}">
+          <div class="crit-edit-row"><label>ปกติ</label><input type="text" class="crit-ok" value="${escapeHtml(c.ok)}" placeholder="เช่น สีใส ระดับ 70% ขึ้นไป"></div>
+          <div class="crit-edit-row"><label>เฝ้าระวัง</label><input type="text" class="crit-watch" value="${escapeHtml(c.watch)}" placeholder="เช่น ระดับเหลือน้อยกว่า 30%"></div>
+          <div class="crit-edit-row"><label>ต้องเปลี่ยน</label><input type="text" class="crit-change" value="${escapeHtml(c.change)}" placeholder="เช่น ระดับต่ำกว่า 10%"></div>
+          <div class="btn-row" style="margin-top:6px;">
+            <button class="btn btn-ghost crit-cancel">ยกเลิก</button>
+            <button class="btn btn-primary crit-save">บันทึกเกณฑ์</button>
+          </div>
+        </div>`;
+    }else if(crit){
+      critBlock = `<div class="item-criteria st-${st}">เกณฑ์ ${STATUS_LABEL[st]}: ${escapeHtml(crit[st])} <span class="crit-edit-link" data-editcrit="${it.id}">✎ แก้ไขเกณฑ์</span></div>`;
+    }else{
+      critBlock = `<div class="crit-edit-link crit-add-link" data-editcrit="${it.id}">+ ตั้งเกณฑ์การตรวจให้รายการนี้</div>`;
+    }
+
     row.innerHTML = `
       <div class="item-top">
         <div class="item-name">${escapeHtml(it.name)}</div>
@@ -876,6 +909,7 @@ function renderChecklist(type){
         </div>
         <button class="item-remove" data-remove="${it.id}" title="ลบรายการนี้">✕</button>
       </div>
+      ${critBlock}
       <textarea class="item-note ${st!=='ok'?'show':''}" rows="1" placeholder="หมายเหตุ (ถ้ามี)">${escapeHtml(state.formNote[type][it.id]||'')}</textarea>
     `;
     list.appendChild(row);
@@ -896,6 +930,33 @@ function renderChecklist(type){
       await saveJSON(machineKey('config:items'), state.items, true);
       renderChecklist(type);
     });
+    const editLink = row.querySelector('[data-editcrit]');
+    if(editLink){
+      editLink.addEventListener('click', ()=>{
+        editingCriteria[type] = it.id;
+        renderChecklist(type);
+      });
+    }
+    const cancelBtn = row.querySelector('.crit-cancel');
+    if(cancelBtn){
+      cancelBtn.addEventListener('click', ()=>{
+        editingCriteria[type] = null;
+        renderChecklist(type);
+      });
+    }
+    const saveBtn = row.querySelector('.crit-save');
+    if(saveBtn){
+      saveBtn.addEventListener('click', async ()=>{
+        const form = row.querySelector('.crit-edit');
+        const ok = form.querySelector('.crit-ok').value.trim();
+        const watch = form.querySelector('.crit-watch').value.trim();
+        const change = form.querySelector('.crit-change').value.trim();
+        state.criteria[it.id] = {ok, watch, change};
+        editingCriteria[type] = null;
+        await saveJSON(machineKey('config:criteria'), state.criteria, true);
+        renderChecklist(type);
+      });
+    }
   });
 }
 
@@ -906,7 +967,7 @@ async function addItem(type){
   const name = input.value.trim();
   if(!name) return;
   const id = type[0]+'_'+Date.now();
-  state.items[type].push({id, name});
+  state.items[type].push({id, name, custom:true, addedDate: todayStr()});
   state.formStatus[type][id] = 'ok';
   state.formNote[type][id] = '';
   input.value='';
@@ -936,82 +997,17 @@ async function saveChecklist(type){
     date: dateVal,
     type,
     operator: operator || '(ไม่ระบุ)',
-    usageHoursAtCheck: state.usage.total || 0,
     items
   };
   state.records[type].push(record);
   state.records[type] = pruneOld(state.records[type]);
   await saveJSON(machineKey('records:'+type), state.records[type], true);
-  if(operator) await saveJSON('last-operator', operator, false);
 
   resetForm(type);
   renderChecklist(type);
   renderHistory();
   showToast(type==='daily' ? 'บันทึกผลตรวจประจำวันแล้ว' : 'บันทึกผลตรวจประจำเดือนแล้ว');
 }
-
-/* ---------------- Usage hours ---------------- */
-function renderUsage(){
-  const totalStr = formatHours(state.usage.total||0);
-  document.getElementById('usage-total').textContent = totalStr;
-  document.getElementById('meterDigits').textContent = totalStr;
-
-  const logDiv = document.getElementById('usage-log');
-  const log = (state.usage.log||[]).slice().reverse().slice(0,15);
-  if(log.length===0){
-    logDiv.innerHTML = '<div class="empty-state">ยังไม่มีบันทึกชั่วโมงการใช้งาน</div>';
-    return;
-  }
-  logDiv.innerHTML = log.map(l=>{
-    if(l.type === 'reset'){
-      return `
-      <div class="log-entry">
-        <span>${l.date}</span>
-        <span class="amt" style="color:var(--red);">↺ รีเซ็ต (จาก ${formatHours(l.totalBefore)} → 0)</span>
-      </div>`;
-    }
-    return `
-    <div class="log-entry">
-      <span>${l.date}</span>
-      <span class="amt">+${l.added} ชม. → รวม ${formatHours(l.totalAfter)}</span>
-    </div>`;
-  }).join('');
-}
-function formatHours(n){
-  return String(Math.round(n*10)/10).padStart(6,'0');
-}
-
-document.getElementById('usage-savebtn').addEventListener('click', async ()=>{
-  const addVal = parseFloat(document.getElementById('usage-add').value);
-  if(isNaN(addVal) || addVal<=0){ showToast('กรุณาระบุจำนวนชั่วโมงให้ถูกต้อง'); return; }
-  const dateVal = document.getElementById('usage-date').value || todayStr();
-  state.usage.total = (state.usage.total||0) + addVal;
-  state.usage.log = state.usage.log || [];
-  state.usage.log.push({type:'add', date: dateVal, added: addVal, totalAfter: state.usage.total, ts: new Date().toISOString()});
-  const cutoff = Date.now() - FOUR_MONTHS_MS;
-  state.usage.log = state.usage.log.filter(l => new Date(l.ts).getTime() >= cutoff);
-  await saveJSON(machineKey('usage:data'), state.usage, true);
-  document.getElementById('usage-add').value='';
-  renderUsage();
-  showToast('บันทึกชั่วโมงการใช้งานแล้ว');
-});
-
-document.getElementById('usage-resetbtn').addEventListener('click', async ()=>{
-  const currentTotal = state.usage.total||0;
-  if(currentTotal <= 0){ showToast('ชั่วโมงเป็น 0 อยู่แล้ว'); return; }
-  const ok = confirm('รีเซ็ตชั่วโมงสะสมเป็น 0 หรือไม่? (จากปัจจุบัน '+formatHours(currentTotal)+' ชม.)\nประวัติชั่วโมงเก่าจะยังถูกเก็บไว้ ไม่ถูกลบ');
-  if(!ok) return;
-  state.usage.log = state.usage.log || [];
-  state.usage.log.push({type:'reset', date: todayStr(), totalBefore: currentTotal, totalAfter: 0, ts: new Date().toISOString()});
-  state.usage.total = 0;
-  const cutoff = Date.now() - FOUR_MONTHS_MS;
-  state.usage.log = state.usage.log.filter(l => new Date(l.ts).getTime() >= cutoff);
-  await saveJSON(machineKey('usage:data'), state.usage, true);
-  renderUsage();
-  showToast('รีเซ็ตชั่วโมงเป็น 0 แล้ว (ประวัติยังอยู่)');
-});
-
-document.getElementById('meterBtn').addEventListener('click', ()=>switchTab('usage'));
 
 /* ---------------- History ---------------- */
 function renderHistory(){
@@ -1033,7 +1029,7 @@ function renderHistory(){
           <span class="badge ${r.type}">${r.type==='daily'?'รายวัน':'รายเดือน'}</span>
           ${flagged>0 ? `<span class="badge flag">${flagged} จุดต้องดู</span>` : ''}
         </div>
-        <div class="when">${r.date} · ${r.operator} · ${formatHours(r.usageHoursAtCheck)} ชม.</div>
+        <div class="when">${r.date} · ${r.operator}</div>
       </div>
       <div class="record-detail" id="detail-${idx}">
         ${r.items.map(i=>`
@@ -1065,7 +1061,6 @@ document.getElementById('export-btn').addEventListener('click', ()=>{
           'วันที่': r.date,
           'ประเภท': r.type==='daily'?'รายวัน':'รายเดือน',
           'ผู้ตรวจ': r.operator,
-          'ชั่วโมงสะสม ณ วันตรวจ': r.usageHoursAtCheck,
           'รายการ': i.name,
           'สถานะ': STATUS_LABEL[i.status],
           'หมายเหตุ': i.note
@@ -1077,31 +1072,11 @@ document.getElementById('export-btn').addEventListener('click', ()=>{
 
   const dailyRows = recordsToRows(state.records.daily);
   const monthlyRows = recordsToRows(state.records.monthly);
-  const usageRows = (state.usage.log||[]).map(l=>{
-    if(l.type === 'reset'){
-      return {
-        'วันที่': l.date,
-        'ประเภทรายการ': 'รีเซ็ตชั่วโมง',
-        'ชั่วโมงที่เพิ่ม': '-',
-        'ชั่วโมงก่อนรีเซ็ต': l.totalBefore,
-        'ชั่วโมงสะสมรวม': 0
-      };
-    }
-    return {
-      'วันที่': l.date,
-      'ประเภทรายการ': 'บันทึกชั่วโมง',
-      'ชั่วโมงที่เพิ่ม': l.added,
-      'ชั่วโมงก่อนรีเซ็ต': '-',
-      'ชั่วโมงสะสมรวม': l.totalAfter
-    };
-  });
 
   wb.SheetNames.push('ตรวจรายวัน');
   wb.Sheets['ตรวจรายวัน'] = XLSX.utils.json_to_sheet(dailyRows.length?dailyRows:[{'หมายเหตุ':'ไม่มีข้อมูล'}]);
   wb.SheetNames.push('ตรวจรายเดือน');
   wb.Sheets['ตรวจรายเดือน'] = XLSX.utils.json_to_sheet(monthlyRows.length?monthlyRows:[{'หมายเหตุ':'ไม่มีข้อมูล'}]);
-  wb.SheetNames.push('ชั่วโมงการใช้งาน');
-  wb.Sheets['ชั่วโมงการใช้งาน'] = XLSX.utils.json_to_sheet(usageRows.length?usageRows:[{'หมายเหตุ':'ไม่มีข้อมูล'}]);
 
   const machineName = (machines.find(m=>m.id===currentMachineId)||{}).name || currentMachineId;
   const fname = 'checklist_'+machineName+'_'+todayStr()+'.xlsx';
