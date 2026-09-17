@@ -412,9 +412,10 @@
       <div id="daily-list"></div>
       <div class="add-item-row">
         <input type="text" id="daily-newitem" placeholder="เพิ่มรายการตรวจ...">
-        <button class="btn btn-ghost" id="daily-addbtn">+ เพิ่ม</button>
+        <button class="btn btn-ghost" id="daily-addtemp">+ ชั่วคราว</button>
+        <button class="btn btn-ghost" id="daily-addperm">+ ถาวร</button>
       </div>
-      <div style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">* รายการที่เพิ่มเองใช้ได้เฉพาะวันนี้ จะถูกลบออกอัตโนมัติในวันถัดไป</div>
+      <div style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">* ชั่วคราว = ใช้ได้เฉพาะวันนี้ ลบอัตโนมัติวันถัดไป · ถาวร = อยู่ในรายการตลอดไป</div>
       <div class="btn-row">
         <button class="btn btn-primary" id="daily-savebtn">บันทึกผลตรวจวันนี้</button>
       </div>
@@ -439,9 +440,10 @@
       <div id="monthly-list"></div>
       <div class="add-item-row">
         <input type="text" id="monthly-newitem" placeholder="เพิ่มรายการตรวจ...">
-        <button class="btn btn-ghost" id="monthly-addbtn">+ เพิ่ม</button>
+        <button class="btn btn-ghost" id="monthly-addtemp">+ ชั่วคราว</button>
+        <button class="btn btn-ghost" id="monthly-addperm">+ ถาวร</button>
       </div>
-      <div style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">* รายการที่เพิ่มเองใช้ได้เฉพาะวันนี้ จะถูกลบออกอัตโนมัติในวันถัดไป</div>
+      <div style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">* ชั่วคราว = ใช้ได้เฉพาะวันนี้ ลบอัตโนมัติวันถัดไป · ถาวร = อยู่ในรายการตลอดไป</div>
       <div class="btn-row">
         <button class="btn btn-primary" id="monthly-savebtn">บันทึกผลตรวจเดือนนี้</button>
       </div>
@@ -960,14 +962,17 @@ function renderChecklist(type){
   });
 }
 
-document.getElementById('daily-addbtn').addEventListener('click', ()=>addItem('daily'));
-document.getElementById('monthly-addbtn').addEventListener('click', ()=>addItem('monthly'));
-async function addItem(type){
+document.getElementById('daily-addtemp').addEventListener('click', ()=>addItem('daily', true));
+document.getElementById('daily-addperm').addEventListener('click', ()=>addItem('daily', false));
+document.getElementById('monthly-addtemp').addEventListener('click', ()=>addItem('monthly', true));
+document.getElementById('monthly-addperm').addEventListener('click', ()=>addItem('monthly', false));
+async function addItem(type, temporary){
   const input = document.getElementById(type+'-newitem');
   const name = input.value.trim();
   if(!name) return;
   const id = type[0]+'_'+Date.now();
-  state.items[type].push({id, name, custom:true, addedDate: todayStr()});
+  const item = temporary ? {id, name, custom:true, addedDate: todayStr()} : {id, name};
+  state.items[type].push(item);
   state.formStatus[type][id] = 'ok';
   state.formNote[type][id] = '';
   input.value='';
